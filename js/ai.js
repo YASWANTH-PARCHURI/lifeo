@@ -109,23 +109,30 @@ Be specific about the food. If multiple items, describe the main ones. Use reali
 /* ── API NINJAS FOOD LOOKUP ── */
 async function callNinjasAPI(description, key) {
   const query = encodeURIComponent(description);
-  const res = await fetch(`https://api.api-ninjas.com/v1/nutrition?query=${query}`, {
+  const res = await fetch('https://api.api-ninjas.com/v1/nutrition?query=' + query, {
     headers: { 'X-Api-Key': key }
   });
   if (!res.ok) throw new Error('API Ninjas error ' + res.status);
   const items = await res.json();
-  if (!items || !items.length) return null;
+  if (!items || !Array.isArray(items) || !items.length) return null;
 
-  // Sum all items returned (e.g. "rice + dal" returns 2 items)
-  const total = items.reduce((acc, item) => ({
-    cal:     acc.cal     + Math.round(item.calories      || 0),
-    protein: acc.protein + Math.round(item.protein_g     || 0),
-    carbs:   acc.carbs   + Math.round(item.carbohydrates_total_g || 0),
-    fat:     acc.fat     + Math.round(item.fat_total_g   || 0),
-  }), { cal: 0, protein: 0, carbs: 0, fat: 0 });
+  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+  const names = [];
+  for (const item of items) {
+    totalCal += parseFloat(item.calories)             || 0;
+    totalP   += parseFloat(item.protein_g)            || 0;
+    totalC   += parseFloat(item.carbohydrates_total_g)|| 0;
+    totalF   += parseFloat(item.fat_total_g)          || 0;
+    if (item.name) names.push(item.name);
+  }
 
-  const names = items.map(i => i.name).join(' + ');
-  return { ...total, note: `Via API Ninjas: ${names}` };
+  return {
+    cal:     Math.round(totalCal),
+    protein: Math.round(totalP),
+    carbs:   Math.round(totalC),
+    fat:     Math.round(totalF),
+    note:    'Via API Ninjas: ' + (names.join(' + ') || description),
+  };
 }
 
 /* ── FALLBACK ROUTING (no API key needed) ── */
