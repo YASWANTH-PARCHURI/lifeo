@@ -311,6 +311,8 @@ function renderSettings() {
   if (keyEl) keyEl.value = s.apiKey || '';
   const waterEl = document.getElementById('s-water-goal');
   if (waterEl) waterEl.value = s.waterGoal || 8;
+  const ninjasEl = document.getElementById('s-ninjas-key');
+  if (ninjasEl) ninjasEl.value = s.ninjasKey || '';
   if (aiEl) {
     aiEl.classList.toggle('on', !!s.aiEnabled);
     aiEl.dataset.on = s.aiEnabled ? '1' : '0';
@@ -323,9 +325,10 @@ function saveSettings() {
   const name = document.getElementById('s-name')?.value.trim();
   const cal = parseInt(document.getElementById('s-cal-goal')?.value) || 1500;
   const key = document.getElementById('s-api-key')?.value.trim();
+  const ninjasKey = document.getElementById('s-ninjas-key')?.value.trim();
   const aiOn = document.getElementById('s-ai-toggle')?.dataset.on === '1';
   const waterGoal = parseInt(document.getElementById('s-water-goal')?.value) || 8;
-  DB.saveSettings({ ...s, name: name || s.name, calGoal: cal, apiKey: key, aiEnabled: aiOn, waterGoal });
+  DB.saveSettings({ ...s, name: name || s.name, calGoal: cal, apiKey: key, ninjasKey, aiEnabled: aiOn, waterGoal });
   updateAIStatus();
   toast('Settings saved');
   renderAll();
@@ -344,12 +347,16 @@ function updateAIStatus() {
   const dot = document.getElementById('ai-status-dot');
   const txt = document.getElementById('ai-status-txt');
   if (!dot || !txt) return;
-  if (!s.apiKey) {
-    dot.className = 'ai-dot'; txt.textContent = 'No API key — add yours in Settings';
-  } else if (!s.aiEnabled) {
-    dot.className = 'ai-dot'; txt.textContent = 'AI disabled';
+  const hasNinjas = !!s.ninjasKey;
+  const hasClaude = !!s.apiKey && s.aiEnabled;
+  if (hasNinjas && hasClaude) {
+    dot.className = 'ai-dot ready'; txt.textContent = 'Full AI — API Ninjas food lookup + Claude routing active';
+  } else if (hasNinjas) {
+    dot.className = 'ai-dot ready'; txt.textContent = 'API Ninjas active — accurate food calories enabled';
+  } else if (hasClaude) {
+    dot.className = 'ai-dot ready'; txt.textContent = 'Claude active — smart routing + photo calories enabled';
   } else {
-    dot.className = 'ai-dot ready'; txt.textContent = 'AI ready — smart routing + photo calories active';
+    dot.className = 'ai-dot'; txt.textContent = 'Add API Ninjas key (free) for accurate food calories';
   }
 }
 
