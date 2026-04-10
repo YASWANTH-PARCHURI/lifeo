@@ -110,28 +110,32 @@ Be specific about the food. If multiple items, describe the main ones. Use reali
 async function callNinjasAPI(description, key) {
   const query = encodeURIComponent(description);
   const res = await fetch('https://api.api-ninjas.com/v1/nutrition?query=' + query, {
-    headers: { 'X-Api-Key': key }
+    method: 'GET',
+    headers: { 'X-Api-Key': key },
   });
   if (!res.ok) throw new Error('API Ninjas error ' + res.status);
-  const items = await res.json();
-  if (!items || !Array.isArray(items) || !items.length) return null;
+  const raw = await res.json();
 
-  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+  /* API returns either [...] or { items: [...] } */
+  const items = Array.isArray(raw) ? raw : (raw.items || []);
+  if (!items.length) return null;
+
+  let cal = 0, protein = 0, carbs = 0, fat = 0;
   const names = [];
-  for (const item of items) {
-    totalCal += parseFloat(item.calories)             || 0;
-    totalP   += parseFloat(item.protein_g)            || 0;
-    totalC   += parseFloat(item.carbohydrates_total_g)|| 0;
-    totalF   += parseFloat(item.fat_total_g)          || 0;
+  items.forEach(function(item) {
+    cal     += item.calories              ? Number(item.calories)              : 0;
+    protein += item.protein_g             ? Number(item.protein_g)             : 0;
+    carbs   += item.carbohydrates_total_g ? Number(item.carbohydrates_total_g) : 0;
+    fat     += item.fat_total_g           ? Number(item.fat_total_g)           : 0;
     if (item.name) names.push(item.name);
-  }
+  });
 
   return {
-    cal:     Math.round(totalCal),
-    protein: Math.round(totalP),
-    carbs:   Math.round(totalC),
-    fat:     Math.round(totalF),
-    note:    'Via API Ninjas: ' + (names.join(' + ') || description),
+    cal:     Math.round(cal),
+    protein: Math.round(protein),
+    carbs:   Math.round(carbs),
+    fat:     Math.round(fat),
+    note:    'Via API Ninjas: ' + names.join(', '),
   };
 }
 
