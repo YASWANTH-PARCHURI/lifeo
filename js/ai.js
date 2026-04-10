@@ -60,6 +60,24 @@ Today's date: ${today()}. Estimate calories/macros from Indian food knowledge if
     }
   },
 
+  /* ── FOOD TEXT ESTIMATION ── */
+  async estimateFoodText(description, meal) {
+    if (!this.enabled) return fallbackFoodEstimate(description);
+    const system = `You are a nutrition expert specializing in Indian food. The user describes what they ate in natural language — Indian home food, street food, or quantity descriptions like "2 chapati", "250g rice with dal", "glass of milk", "2 tbsp peanut butter".
+
+Estimate total calories and macros for everything described. Respond ONLY with valid JSON, no markdown:
+{"cal":number,"protein":number,"carbs":number,"fat":number,"note":"brief note"}
+
+Use realistic standard Indian home-cooked portions. For quantities given, use those exactly.`;
+    try {
+      const raw = await this.call([{ role: 'user', content: description }], system, 200);
+      const json = raw.replace(/```json|```/g, '').trim();
+      return JSON.parse(json);
+    } catch(e) {
+      return fallbackFoodEstimate(description);
+    }
+  },
+
   /* ── FOOD PHOTO CALORIE ESTIMATION ── */
   async estimateFoodPhoto(base64, mimeType) {
     if (!this.enabled) throw new Error('AI not configured');
@@ -107,4 +125,30 @@ function fallbackRoute(text) {
     }
   }
   return { module: 'task', confidence: 0.6, extracted: { text, priority: 'normal', date: today() }, display: '→ task (planner)' };
+}
+
+/* ── FALLBACK FOOD ESTIMATE (no API) ── */
+function fallbackFoodEstimate(description) {
+  const t = description.toLowerCase();
+  const estimates = [
+    { words: ['rice','dal','sabzi'], cal: 450, protein: 12, carbs: 80, fat: 8 },
+    { words: ['chapati','roti','sabzi'], cal: 300, protein: 8, carbs: 55, fat: 6 },
+    { words: ['idli','sambar'], cal: 250, protein: 8, carbs: 45, fat: 3 },
+    { words: ['dosa'], cal: 200, protein: 4, carbs: 35, fat: 6 },
+    { words: ['oats','oatmeal'], cal: 150, protein: 5, carbs: 27, fat: 3 },
+    { words: ['egg','eggs'], cal: 140, protein: 12, carbs: 1, fat: 10 },
+    { words: ['milk','glass of milk'], cal: 120, protein: 6, carbs: 10, fat: 5 },
+    { words: ['banana'], cal: 90, protein: 1, carbs: 23, fat: 0 },
+    { words: ['peanut butter'], cal: 190, protein: 8, carbs: 6, fat: 16 },
+    { words: ['coffee','tea'], cal: 10, protein: 0, carbs: 2, fat: 0 },
+    { words: ['biryani'], cal: 500, protein: 18, carbs: 70, fat: 16 },
+    { words: ['paneer'], cal: 350, protein: 20, carbs: 10, fat: 24 },
+    { words: ['chicken'], cal: 280, protein: 30, carbs: 5, fat: 14 },
+  ];
+  for (const e of estimates) {
+    if (e.words.some(w => t.includes(w))) {
+      return { ...e, note: 'Rough estimate — add API key for precise calculation' };
+    }
+  }
+  return { cal: 300, protein: 10, carbs: 40, fat: 10, note: 'Generic estimate — describe food in more detail for accuracy' };
 }
