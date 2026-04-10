@@ -60,22 +60,18 @@ Today's date: ${today()}. Estimate calories/macros from Indian food knowledge if
     }
   },
 
-  /* ── FOOD TEXT ESTIMATION ── */
+  /* ── FOOD TEXT ESTIMATION — API Ninjas first, fallback to Indian DB ── */
   async estimateFoodText(description, meal) {
-    if (!this.enabled) return fallbackFoodEstimate(description);
-    const system = `You are a nutrition expert specializing in Indian food. The user describes what they ate in natural language — Indian home food, street food, or quantity descriptions like "2 chapati", "250g rice with dal", "glass of milk", "2 tbsp peanut butter".
-
-Estimate total calories and macros for everything described. Respond ONLY with valid JSON, no markdown:
-{"cal":number,"protein":number,"carbs":number,"fat":number,"note":"brief note"}
-
-Use realistic standard Indian home-cooked portions. For quantities given, use those exactly.`;
-    try {
-      const raw = await this.call([{ role: 'user', content: description }], system, 200);
-      const json = raw.replace(/```json|```/g, '').trim();
-      return JSON.parse(json);
-    } catch(e) {
-      return fallbackFoodEstimate(description);
+    const ninjasKey = DB.getSettings().ninjasKey || '';
+    if (ninjasKey) {
+      try {
+        const result = await callNinjasAPI(description, ninjasKey);
+        if (result) return result;
+      } catch(e) {
+        console.warn('API Ninjas failed, using fallback', e);
+      }
     }
+    return fallbackFoodEstimate(description);
   },
 
   /* ── FOOD PHOTO CALORIE ESTIMATION ── */
@@ -109,6 +105,28 @@ Be specific about the food. If multiple items, describe the main ones. Use reali
     return JSON.parse(json);
   },
 };
+
+/* ── API NINJAS FOOD LOOKUP ── */
+async function callNinjasAPI(description, key) {
+  const query = encodeURIComponent(description);
+  const res = await fetch(`https://api.api-ninjas.com/v1/nutrition?query=${query}`, {
+    headers: { 'X-Api-Key': key }
+  });
+  if (!res.ok) throw new Error('API Ninjas error ' + res.status);
+  const items = await res.json();
+  if (!items || !items.length) return null;
+
+  // Sum all items returned (e.g. "rice + dal" returns 2 items)
+  const total = items.reduce((acc, item) => ({
+    cal:     acc.cal     + Math.round(item.calories      || 0),
+    protein: acc.protein + Math.round(item.protein_g     || 0),
+    carbs:   acc.carbs   + Math.round(item.carbohydrates_total_g || 0),
+    fat:     acc.fat     + Math.round(item.fat_total_g   || 0),
+  }), { cal: 0, protein: 0, carbs: 0, fat: 0 });
+
+  const names = items.map(i => i.name).join(' + ');
+  return { ...total, note: `Via API Ninjas: ${names}` };
+}
 
 /* ── FALLBACK ROUTING (no API key needed) ── */
 function fallbackRoute(text) {
