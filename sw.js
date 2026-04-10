@@ -1,12 +1,13 @@
-const CACHE = 'lifeo-v1';
+const CACHE = 'lifeo-v2';
+const BASE = '/lifeo';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/app.css',
-  '/js/db.js',
-  '/js/ai.js',
-  '/js/app.js',
-  '/manifest.json'
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/css/app.css',
+  BASE + '/js/db.js',
+  BASE + '/js/ai.js',
+  BASE + '/js/app.js',
+  BASE + '/manifest.json',
 ];
 
 self.addEventListener('install', e => {
@@ -25,6 +26,6 @@ self.addEventListener('fetch', e => {
   if (e.request.url.includes('api.anthropic.com')) return;
   if (e.request.url.includes('fonts.googleapis.com') || e.request.url.includes('fonts.gstatic.com')) return;
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => caches.match(BASE + '/index.html')))
   );
 });
