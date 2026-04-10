@@ -30,6 +30,7 @@ function renderAll() {
   renderGoals();
   renderProjects();
   renderSettings();
+  renderWater();
 }
 
 /* ── NAV ── */
@@ -47,7 +48,7 @@ function showPage(name) {
   document.querySelector(`.nav-item[data-page="${name}"]`)?.classList.add('active');
   currentPage = name;
   if (name === 'home') renderHome();
-  if (name === 'food') renderFood();
+  if (name === 'food') { renderFood(); renderWater(); }
   if (name === 'exercise') renderExercise();
   if (name === 'planner') renderPlanner();
   if (name === 'goals') renderGoals();
@@ -308,6 +309,8 @@ function renderSettings() {
   if (nameEl) nameEl.value = s.name || '';
   if (calEl) calEl.value = s.calGoal || 1500;
   if (keyEl) keyEl.value = s.apiKey || '';
+  const waterEl = document.getElementById('s-water-goal');
+  if (waterEl) waterEl.value = s.waterGoal || 8;
   if (aiEl) {
     aiEl.classList.toggle('on', !!s.aiEnabled);
     aiEl.dataset.on = s.aiEnabled ? '1' : '0';
@@ -321,7 +324,8 @@ function saveSettings() {
   const cal = parseInt(document.getElementById('s-cal-goal')?.value) || 1500;
   const key = document.getElementById('s-api-key')?.value.trim();
   const aiOn = document.getElementById('s-ai-toggle')?.dataset.on === '1';
-  DB.saveSettings({ ...s, name: name || s.name, calGoal: cal, apiKey: key, aiEnabled: aiOn });
+  const waterGoal = parseInt(document.getElementById('s-water-goal')?.value) || 8;
+  DB.saveSettings({ ...s, name: name || s.name, calGoal: cal, apiKey: key, aiEnabled: aiOn, waterGoal });
   updateAIStatus();
   toast('Settings saved');
   renderAll();
@@ -549,45 +553,119 @@ function submitTask() {
 }
 
 function openAddFood(meal) {
+  const examples = {
+    breakfast: '2 idli with sambar, glass of milk',
+    lunch: '250g rice with dal and sabzi',
+    dinner: '3 chapati with paneer curry',
+    snack: '2 tbsp peanut butter, banana',
+    other: 'glass of milk, handful of nuts',
+  };
+  const mealLabel = meal.charAt(0).toUpperCase() + meal.slice(1);
   showModal(`
-    <div class="modal-title">Log food</div>
-    <div class="field"><label>Food name</label><input id="m-food-name" type="text" placeholder="e.g. Dal rice, Oats, Coffee" autocomplete="off"></div>
-    <div class="field"><label>Calories</label><input id="m-food-cal" type="number" placeholder="kcal" min="0"></div>
-    <div class="field"><label>Meal</label>
-      <select id="m-food-meal">
-        <option value="breakfast"${meal==='breakfast'?' selected':''}>Breakfast</option>
-        <option value="lunch"${meal==='lunch'?' selected':''}>Lunch</option>
-        <option value="dinner"${meal==='dinner'?' selected':''}>Dinner</option>
-        <option value="snack"${meal==='snack'?' selected':''}>Snack</option>
-        <option value="other">Other</option>
-      </select>
+    <div class="modal-title">Log ${mealLabel}</div>
+    <div class="field">
+      <label>What did you eat? Describe it naturally</label>
+      <textarea id="m-food-desc" placeholder="e.g. ${examples[meal]||examples.other}" rows="3" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:11px 13px;outline:none;resize:none;line-height:1.5;transition:border-color 0.15s;"></textarea>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-      <div class="field"><label>Protein (g)</label><input id="m-food-p" type="number" placeholder="0" min="0"></div>
-      <div class="field"><label>Carbs (g)</label><input id="m-food-c" type="number" placeholder="0" min="0"></div>
-      <div class="field"><label>Fat (g)</label><input id="m-food-f" type="number" placeholder="0" min="0"></div>
+    <div id="m-food-estimating" style="display:none;text-align:center;padding:10px 0;font-size:13px;color:var(--text2);">Estimating calories…⏳</div>
+    <div id="m-food-estimate" style="display:none;background:var(--bg3);border-radius:var(--r-sm);padding:12px;margin-bottom:4px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">AI Estimate</div>
+      <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px;">
+        <div><span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--amber);" id="m-est-cal">—</span><span style="font-size:11px;color:var(--text3);margin-left:3px;">kcal</span></div>
+        <div><span style="font-size:13px;font-weight:600;" id="m-est-p">—</span><span style="font-size:11px;color:var(--text3);margin-left:2px;">P</span></div>
+        <div><span style="font-size:13px;font-weight:600;" id="m-est-c">—</span><span style="font-size:11px;color:var(--text3);margin-left:2px;">C</span></div>
+        <div><span style="font-size:13px;font-weight:600;" id="m-est-f">—</span><span style="font-size:11px;color:var(--text3);margin-left:2px;">F</span></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);" id="m-est-note"></div>
     </div>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitFood()">Add entry</button>
+      <button class="btn btn-ghost" id="m-est-btn" onclick="estimateFoodFromText('${meal}')">Estimate →</button>
+      <button class="btn btn-primary" id="m-food-save-btn" onclick="submitFoodEstimate('${meal}')" style="opacity:0.5;pointer-events:none;">Save</button>
     </div>
   `);
-  document.getElementById('m-food-name')?.focus();
+  const ta = document.getElementById('m-food-desc');
+  ta?.focus();
+  ta?.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();estimateFoodFromText(meal);} });
 }
 
-function submitFood() {
-  const name = document.getElementById('m-food-name')?.value.trim();
-  const cal = parseInt(document.getElementById('m-food-cal')?.value) || 0;
-  const meal = document.getElementById('m-food-meal')?.value || 'other';
-  const protein = parseInt(document.getElementById('m-food-p')?.value) || 0;
-  const carbs = parseInt(document.getElementById('m-food-c')?.value) || 0;
-  const fat = parseInt(document.getElementById('m-food-f')?.value) || 0;
-  if (!name) return;
-  DB.addFood({ name, cal, meal, protein, carbs, fat });
+let _lastFoodEstimate = null;
+
+async function estimateFoodFromText(meal) {
+  const desc = document.getElementById('m-food-desc')?.value.trim();
+  if (!desc) return;
+  const estimatingEl = document.getElementById('m-food-estimating');
+  const estimateEl = document.getElementById('m-food-estimate');
+  const estBtn = document.getElementById('m-est-btn');
+  const saveBtn = document.getElementById('m-food-save-btn');
+  estimatingEl.style.display = 'block';
+  estimateEl.style.display = 'none';
+  estBtn.disabled = true;
+  try {
+    const result = await AI.estimateFoodText(desc, meal);
+    _lastFoodEstimate = { ...result, meal, name: desc };
+    document.getElementById('m-est-cal').textContent = result.cal;
+    document.getElementById('m-est-p').textContent = result.protein + 'g';
+    document.getElementById('m-est-c').textContent = result.carbs + 'g';
+    document.getElementById('m-est-f').textContent = result.fat + 'g';
+    document.getElementById('m-est-note').textContent = result.note || '';
+    estimateEl.style.display = 'block';
+    saveBtn.style.opacity = '1';
+    saveBtn.style.pointerEvents = 'auto';
+  } catch(e) {
+    _lastFoodEstimate = null;
+    estimatingEl.innerHTML = '<span style="color:var(--coral)">Add Claude API key in Settings for auto-estimation</span>';
+    saveBtn.style.opacity = '1';
+    saveBtn.style.pointerEvents = 'auto';
+  }
+  estimatingEl.style.display = 'none';
+  estBtn.disabled = false;
+}
+
+function submitFoodEstimate(meal) {
+  const desc = document.getElementById('m-food-desc')?.value.trim();
+  if (!desc) return;
+  if (_lastFoodEstimate) {
+    DB.addFood({ name: desc, cal: _lastFoodEstimate.cal, protein: _lastFoodEstimate.protein, carbs: _lastFoodEstimate.carbs, fat: _lastFoodEstimate.fat, meal });
+    toast(`Logged ${_lastFoodEstimate.cal} kcal`);
+  } else {
+    DB.addFood({ name: desc, cal: 0, protein: 0, carbs: 0, fat: 0, meal });
+    toast('Saved — add API key for calorie estimates');
+  }
+  _lastFoodEstimate = null;
   closeModal();
   renderFood();
   renderHome();
-  toast('Food logged');
+}
+
+/* ── WATER TRACKING ── */
+function logWater(delta) {
+  const key = 'lifeo_water_' + TODAY;
+  const current = parseInt(localStorage.getItem(key) || '0');
+  const next = Math.max(0, current + delta);
+  localStorage.setItem(key, next);
+  renderWater();
+  if (delta > 0) toast('💧 +1 glass logged');
+}
+
+function getWaterToday() {
+  return parseInt(localStorage.getItem('lifeo_water_' + TODAY) || '0');
+}
+
+function renderWater() {
+  const s = DB.getSettings();
+  const goal = s.waterGoal || 8;
+  const current = getWaterToday();
+  const pct = Math.min(Math.round((current / goal) * 100), 100);
+  setText('w-current', current);
+  setText('w-goal', goal);
+  setBar('w-bar', pct, 'var(--blue)');
+  const dots = document.getElementById('w-dots');
+  if (dots) {
+    dots.innerHTML = Array.from({length: Math.min(goal,12)}, (_, i) =>
+      `<div onclick="logWater(${i < current ? -1 : 1})" style="width:30px;height:30px;border-radius:7px;background:${i < current ? 'rgba(74,158,255,0.75)' : 'var(--bg4)'};display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:background 0.15s;">💧</div>`
+    ).join('');
+  }
 }
 
 function openAddExercise() {
