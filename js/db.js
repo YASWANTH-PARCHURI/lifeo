@@ -28,6 +28,7 @@ const DB = {
       name: 'Yaswanth',
       calGoal: 1500,
       apiKey: '',
+      ninjasKey: '',
       aiEnabled: true,
     });
   },
