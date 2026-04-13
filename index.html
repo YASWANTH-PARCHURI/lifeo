@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LifeO">
+<meta name="description" content="Your personal life operating system">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<title>LifeO</title>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── TOPBAR ── -->
+  <div class="topbar">
+    <div class="logo">Life<em>O</em></div>
+    <div class="topbar-right">
+      <div class="icon-btn" onclick="showPage('settings')" title="Settings">⚙</div>
+      <div class="avatar">Y</div>
+    </div>
+  </div>
+
+  <!-- ── PAGES ── -->
+  <div class="pages">
+
+    <!-- HOME -->
+    <div class="page" id="page-home">
+      <div class="section-label">Today — <span id="today-label"></span></div>
+
+      <!-- Calorie Balance Hero -->
+      <div class="cal-hero">
+        <div class="cal-hero-label">Calorie balance</div>
+        <div class="cal-big" id="h-net">—</div>
+        <div class="cal-status" id="h-net-status">Loading…</div>
+        <div class="cal-row">
+          <div class="cal-col">
+            <div class="cal-col-val" style="color:var(--amber)" id="h-intake">0</div>
+            <div class="cal-col-lbl">eaten</div>
+          </div>
+          <div class="cal-col">
+            <div class="cal-col-val" style="color:var(--teal)" id="h-burned">0</div>
+            <div class="cal-col-lbl">burned</div>
+          </div>
+          <div class="cal-col">
+            <div class="cal-col-val" id="h-net2">0</div>
+            <div class="cal-col-lbl">net · goal: <span id="h-goal">1500</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metric-grid">
+        <div class="metric-card" onclick="showPage('planner')" style="cursor:pointer">
+          <div class="metric-lbl">Tasks done</div>
+          <div class="metric-val"><span id="h-tasks-val">0</span><small id="h-tasks-of">/0</small></div>
+          <div class="mbar"><div class="mbar-fill" id="h-tasks-bar" style="width:0%;background:var(--blue)"></div></div>
+          <div class="metric-note" id="h-tasks-note">0 remaining</div>
+        </div>
+        <div class="metric-card" onclick="showPage('goals')" style="cursor:pointer">
+          <div class="metric-lbl">Top goal</div>
+          <div class="metric-val"><span id="h-goal-val">—</span></div>
+          <div class="mbar"><div class="mbar-fill" id="h-goal-bar" style="width:0%"></div></div>
+          <div class="metric-note" id="h-goal-note"></div>
+        </div>
+        <div class="metric-card" onclick="showPage('exercise')" style="cursor:pointer">
+          <div class="metric-lbl">Exercise streak</div>
+          <div class="metric-val"><span id="h-streak-val">0</span><small> days</small></div>
+          <div class="mbar"><div class="mbar-fill" id="h-streak-bar" style="width:0%;background:var(--teal)"></div></div>
+          <div class="metric-note" id="h-streak-note"></div>
+        </div>
+        <div class="metric-card" onclick="showPage('projects')" style="cursor:pointer">
+          <div class="metric-lbl">Projects</div>
+          <div class="metric-val">3</div>
+          <div class="mbar"><div class="mbar-fill" style="width:60%;background:var(--coral)"></div></div>
+          <div class="metric-note">1 deadline this week</div>
+        </div>
+      </div>
+
+      <!-- Task preview -->
+      <div class="section-label">Today's tasks</div>
+      <div class="card">
+        <div id="h-tasks-preview"></div>
+      </div>
+      <button class="add-btn" onclick="openAddTask()">+ Add task</button>
+
+      <!-- Week calories -->
+      <div class="section-label">This week</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:500;">Calorie intake</div>
+          <div style="font-size:11px;color:var(--text2)" id="h-week-avg"></div>
+        </div>
+        <div class="week-bars" id="h-week-bars"></div>
+      </div>
+    </div>
+
+    <!-- FOOD -->
+    <div class="page" id="page-food">
+      <div class="page-title">Food</div>
+      <div class="page-sub" id="f-date"></div>
+
+      <div class="cal-hero" style="padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="cal-hero-label">Eaten today</div>
+            <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--amber);"><span id="f-cal">0</span> <span style="font-size:13px;color:var(--text2);font-weight:400;">kcal</span></div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Goal</div>
+            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="f-goal">1500</div>
+            <div class="tag" id="f-diff" style="margin-top:4px;font-size:11px;">0</div>
+          </div>
+        </div>
+        <div class="mbar" style="margin:12px 0;height:5px;"><div class="mbar-fill" id="f-cal-bar" style="width:0%"></div></div>
+        <div style="display:flex;gap:20px;">
+          <div><div style="font-size:13px;font-weight:600;" id="f-p">0g</div><div style="font-size:11px;color:var(--text3);">protein</div></div>
+          <div><div style="font-size:13px;font-weight:600;" id="f-c">0g</div><div style="font-size:11px;color:var(--text3);">carbs</div></div>
+          <div><div style="font-size:13px;font-weight:600;" id="f-fat">0g</div><div style="font-size:11px;color:var(--text3);">fats</div></div>
+        </div>
+      </div>
+
+      <div class="section-label">Breakfast</div>
+      <div class="card" style="padding:12px 16px;"><div id="f-breakfast"><div style="color:var(--text3);font-size:13px;text-align:center;padding:6px 0;">Nothing logged</div></div></div>
+      <button class="add-btn" onclick="openAddFood('breakfast')">+ Log breakfast</button>
+
+      <div class="section-label">Lunch</div>
+      <div class="card" style="padding:12px 16px;"><div id="f-lunch"><div style="color:var(--text3);font-size:13px;text-align:center;padding:6px 0;">Nothing logged</div></div></div>
+      <button class="add-btn" onclick="openAddFood('lunch')">+ Log lunch</button>
+
+      <div class="section-label">Dinner</div>
+      <div class="card" style="padding:12px 16px;"><div id="f-dinner"><div style="color:var(--text3);font-size:13px;text-align:center;padding:6px 0;">Nothing logged</div></div></div>
+      <button class="add-btn" onclick="openAddFood('dinner')">+ Log dinner</button>
+
+      <div class="section-label">Snacks</div>
+      <div class="card" style="padding:12px 16px;"><div id="f-snack"><div style="color:var(--text3);font-size:13px;text-align:center;padding:6px 0;">Nothing logged</div></div></div>
+      <button class="add-btn" onclick="openQC('food')">+ Snap photo or type</button>
+
+      <div class="section-label">Water</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--blue);" id="w-current">0</span>
+            <span style="font-size:13px;color:var(--text2);margin-left:4px;">/ <span id="w-goal">8</span> glasses</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="logWater(-1)" style="width:32px;height:32px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+            <button onclick="logWater(1)" style="width:32px;height:32px;border-radius:50%;background:var(--blue);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+          </div>
+        </div>
+        <div class="mbar" style="margin-bottom:12px;height:4px;"><div class="mbar-fill" id="w-bar" style="width:0%;background:var(--blue)"></div></div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;" id="w-dots"></div>
+      </div>
+    </div>
+
+    <!-- EXERCISE -->
+    <div class="page" id="page-exercise">
+      <div class="page-title">Exercise</div>
+      <div class="page-sub" id="ex-date"></div>
+
+      <div class="cal-hero" style="padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="cal-hero-label">Burned today</div>
+            <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--teal);"><span id="ex-burned">0</span> <span style="font-size:13px;color:var(--text2);font-weight:400;">kcal</span></div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Streak</div>
+            <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--teal);"><span id="ex-streak">0</span>🔥</div>
+          </div>
+        </div>
+        <div class="streak-row" id="ex-streak-dots"></div>
+      </div>
+
+      <div class="section-label">Today's workouts</div>
+      <div class="card" style="padding:12px 16px;"><div id="ex-list"></div></div>
+      <button class="add-btn" onclick="openAddExercise()">+ Log workout</button>
+
+      <div class="section-label">This week</div>
+      <div class="card">
+        <div class="week-bars" id="ex-week-bars"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;" id="ex-week-total"></div>
+      </div>
+    </div>
+
+    <!-- PLANNER -->
+    <div class="page" id="page-planner">
+      <div class="page-title">Day planner</div>
+      <div class="page-sub" id="pl-date"></div>
+
+      <div class="metric-grid" style="margin-bottom:16px;">
+        <div class="metric-card">
+          <div class="metric-lbl">Done</div>
+          <div class="metric-val"><span id="pl-done">0</span><small>/<span id="pl-total">0</span></small></div>
+          <div class="mbar"><div class="mbar-fill" id="pl-bar" style="width:0%;background:var(--blue)"></div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-lbl">Remaining</div>
+          <div class="metric-val" id="pl-remain">0</div>
+          <div class="mbar"><div class="mbar-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="section-label">Tasks</div>
+      <div class="card"><div id="pl-tasks"></div></div>
+      <button class="add-btn" onclick="openAddTask()">+ Add task</button>
+    </div>
+
+    <!-- GOALS -->
+    <div class="page" id="page-goals">
+      <div class="page-title">Goals</div>
+      <div class="page-sub">Track what matters long-term</div>
+      <div id="goals-list"></div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="page" id="page-projects">
+      <div class="page-title">Projects</div>
+      <div class="page-sub">3 active · 1 deadline this week</div>
+      <div id="projects-list"></div>
+      <button class="add-btn" onclick="openQC('project')">+ Add project via Quick Capture</button>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Personalize LifeO</div>
+
+      <div class="section-label">Profile</div>
+      <div class="card" style="padding:0;">
+        <div class="settings-row">
+          <div><div class="settings-row-label">Your name</div></div>
+          <input class="settings-input" id="s-name" type="text" placeholder="Name">
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Daily calorie goal</div><div class="settings-row-sub">Used in dashboard balance</div></div>
+          <input class="settings-input" id="s-cal-goal" type="number" placeholder="1500" min="500" max="5000">
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Daily water goal</div><div class="settings-row-sub">Glasses per day (default 8)</div></div>
+          <input class="settings-input" id="s-water-goal" type="number" placeholder="8" min="1" max="20">
+        </div>
+      </div>
+
+      <div class="section-label">AI Features</div>
+      <div class="card" style="padding:0;">
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">API Ninjas key</div>
+            <div class="settings-row-sub">Free food nutrition lookup</div>
+          </div>
+          <input class="settings-input" id="s-ninjas-key" type="password" placeholder="Paste key here">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Claude API key</div>
+            <div class="settings-row-sub">For smart routing + photo calories</div>
+          </div>
+          <input class="settings-input" id="s-api-key" type="password" placeholder="sk-ant-…">
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Enable AI features</div><div class="settings-row-sub">Smart capture + food photo</div></div>
+          <div class="toggle" id="s-ai-toggle" onclick="toggleAI()"></div>
+        </div>
+      </div>
+
+      <div class="ai-status" style="padding:0 4px;margin-bottom:16px;">
+        <div class="ai-dot" id="ai-status-dot"></div>
+        <span id="ai-status-txt"></span>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="saveSettings()">Save settings</button>
+
+      <div class="section-label">About</div>
+      <div class="card" style="padding:0;">
+        <div class="settings-row">
+          <div class="settings-row-label">Version</div>
+          <div style="font-size:13px;color:var(--text3);">1.0.0</div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">Storage</div>
+          <div style="font-size:13px;color:var(--text3);">Local device only</div>
+        </div>
+        <div class="settings-row" style="cursor:pointer;" onclick="if(confirm('Clear all data? This cannot be undone.')){localStorage.clear();location.reload();}">
+          <div class="settings-row-label" style="color:var(--coral);">Clear all data</div>
+          <div style="font-size:13px;color:var(--text3);">→</div>
+        </div>
+      </div>
+
+      <div style="height:20px;"></div>
+    </div>
+
+  </div><!-- /pages -->
+
+  <!-- ── BOTTOM NAV ── -->
+  <div class="nav">
+    <div class="nav-item active" data-page="home">
+      <div class="nav-icon">⊞</div>
+      <div class="nav-label">Home</div>
+    </div>
+    <div class="nav-item" data-page="food">
+      <div class="nav-icon">◎</div>
+      <div class="nav-label">Food</div>
+    </div>
+    <div class="nav-plus">＋</div>
+    <div class="nav-item" data-page="planner">
+      <div class="nav-icon">▤</div>
+      <div class="nav-label">Tasks</div>
+    </div>
+    <div class="nav-item" data-page="goals">
+      <div class="nav-icon">◈</div>
+      <div class="nav-label">Goals</div>
+    </div>
+  </div>
+
+  <!-- ── QUICK CAPTURE ── -->
+  <div class="qc-overlay hidden" id="qc-overlay">
+    <div class="qc-sheet">
+      <div class="qc-handle"></div>
+      <div class="qc-title">Quick Capture</div>
+      <div class="qc-sub">Type anything — LifeO routes it automatically</div>
+      <div class="qc-chips">
+        <div class="qc-chip" data-ex="Ran 5km in 28 mins">Ran 5km</div>
+        <div class="qc-chip" data-ex="Dal rice for lunch, 600 cal">Dal rice</div>
+        <div class="qc-chip" data-ex="Finish pitch deck by Friday">Finish deck</div>
+        <div class="qc-chip" data-ex="Push-ups 3x20">Push-ups</div>
+        <div class="qc-chip" data-ex="Read 20 pages tonight">Read 20 pages</div>
+      </div>
+      <textarea class="qc-textarea" id="qc-input" placeholder="e.g. 'ran 5km', 'dal rice 600 cal', 'call investor by 3pm'…" rows="3"></textarea>
+      <div class="qc-route-hint" id="qc-route-hint"></div>
+      <div class="qc-btns">
+        <button class="btn btn-ghost" id="qc-photo">📷 Photo</button>
+        <button class="btn btn-primary" id="qc-save">Save →</button>
+      </div>
+      <input type="file" id="qc-img" accept="image/*" capture="environment" style="display:none">
+    </div>
+  </div>
+
+  <!-- ── TOAST ── -->
+  <div class="toast" id="toast"></div>
+
+</div><!-- /app -->
+
+<script src="js/db.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Set date labels
+  const dateStr = new Date().toLocaleDateString('en-IN', { weekday:'short', month:'short', day:'numeric' });
+  document.getElementById('today-label').textContent = dateStr;
+  ['f-date','ex-date','pl-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', month:'long', day:'numeric' });
+  });
+</script>
+</body>
+</html>
